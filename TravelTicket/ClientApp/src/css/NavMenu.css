@@ -6,6 +6,7 @@
 
 html {
   font-size: 14px;
+  color: rgb(10, 1, 47);
 }
 @media (min-width: 768px) {
   html {
@@ -14,5 +15,10 @@ html {
 }
 
 .box-shadow {
-  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+  box-shadow: 0 .25rem .75rem rgba(255, 255, 255, 0.05);
+}
+
+nav {
+  background-color: rgb(110, 255, 226);
+  border-bottom: 1px solid #e5e5e5;
 }

@@ -1,5 +1,6 @@
 import React, { Component, useState } from 'react';
-import {CreateLobbyModal} from './util/CreateLobbyModal';
+import {CreateLobbyModal} from './lobby/CreateLobbyModal';
+import "../css/home.css";
 
 export class Home extends Component {
   static displayName = Home.name;
@@ -12,9 +13,10 @@ export class Home extends Component {
 
     return (
       <div className="home-container">
-        <h1>Travel Ticket</h1>
+        <h1 className="text-center" >Travel Ticket</h1>
+        <button onClick=
+        {handleFindGame} variant="success" size="lg">Find Game</button>
         <CreateLobbyModal/>
-        <button onClick={handleFindGame}>Find Game</button>
       </div>
     );
   }

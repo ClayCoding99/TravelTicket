@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
+import "../../css/lobby/createLobbyModal.css";
 
 export function CreateLobbyModal() {
   const [show, setShow] = useState(false);
@@ -43,26 +44,29 @@ export function CreateLobbyModal() {
 
   return (
     <>
-      <button onClick={handleShow}>Create Lobby</button>
+      <button className="btn-secondary d-flex btn-block" onClick={handleShow}>Create Lobby</button>
 
       <Modal
         show={show}
         onHide={handleClose}
         backdrop="static"
         keyboard={false}
+        className="my-modal"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Create Lobby</Modal.Title>
+          <Modal.Title className="modal-title">Create Lobby</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <label>Enter Lobby Name</label>
-          <input value={lobbyName} onChange={e => setLobbyName(e.target.value)}type="text" />
-          <label>Enter Lobby Password</label>
-          <input value={lobbyPassword} onChange={e => setLobbyPassword(e.target.value)} type="text" />
+          <div className="modal-body">
+            <label id="one">Enter Lobby Name</label>
+            <input id="two" value={lobbyName} onChange={e => setLobbyName(e.target.value)}type="text" />
+            <label id="three">Enter Lobby Password</label>
+            <input id="four" value={lobbyPassword} onChange={e => setLobbyPassword(e.target.value)} type="text" />
+          </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>
-            Close
+            Cancel
           </Button>
           <Button onClick={handleCreateLobby} variant="primary">Create</Button>
         </Modal.Footer>

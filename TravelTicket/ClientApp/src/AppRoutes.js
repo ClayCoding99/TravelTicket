@@ -1,6 +1,6 @@
 import { Home } from "./components/Home";
-import {FindLobby} from "./components/FindLobby";
-import {Lobby} from "./components/Lobby";
+import {FindLobby} from "./components/lobby/FindLobby";
+import {Lobby} from "./components/lobby/lobby";
 
 const AppRoutes = [
   {
@@ -14,7 +14,7 @@ const AppRoutes = [
   {
     path: "/lobby/:lobbyId",
     element: <Lobby />
-  }
+  },
 ];
 
 export default AppRoutes;

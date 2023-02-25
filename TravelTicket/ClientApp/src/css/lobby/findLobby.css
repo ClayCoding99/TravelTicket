@@ -1,0 +1,75 @@
+h1, h2, h3, h4, h5, h6 {
+    color: white;
+}
+
+/* width */
+::-webkit-scrollbar {
+    width: 1.2em;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 5px grey; 
+    border-radius: 10px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background-color: brown;
+    border-radius: 10px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: rgb(110, 255, 226);
+}
+
+.find-lobby-list {
+    margin-top: 3em;
+    height: 85vh;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+}
+
+.lobbyDetails {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    padding: 1em;
+    justify-items: center;
+    align-items: center;
+    border: 1px solid black;
+    background-color: rgb(110, 255, 226);
+    border: 10px solid green;
+}
+
+.flex-item {
+    margin: 5px;
+    padding: 8px 14px;
+    text-align: left;
+}
+
+.lobbyDetails > h1 {
+    color: black;
+    font-size: 3em;
+}
+
+.lobbyDetails > p {
+    color: black;
+    font-size: 1.5em;
+    font-display: block;
+    text-align: left;
+}
+
+.lobbyDetails > button {
+    background-color: brown;
+    width: 50%;
+    height: 1.75em;
+}
+
+.lobbyDetails > button:hover {
+    background-color: white;
+}
