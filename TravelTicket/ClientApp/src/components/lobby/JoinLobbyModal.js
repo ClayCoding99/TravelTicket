@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 
+import "../../css/lobby/joinLobbyModal.css";
+
 export function JoinGameModal({lobbyDetails}) {
   const [show, setShow] = useState(false);
   const [inputPassword, setInputPassword] = useState("");
@@ -30,16 +32,18 @@ export function JoinGameModal({lobbyDetails}) {
         keyboard={false}
       >
         <Modal.Header closeButton>
-          <Modal.Title>Modal title</Modal.Title>
+          <Modal.Title>Join Game</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <input onChange={e => setInputPassword(e.target.value)} type="text" placeholder='Enter password' />
+          <input className="modal-body" onChange={e => setInputPassword(e.target.value)} type="text" placeholder='Enter password' />
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
-            Close
-          </Button>
-          <Button onClick={handleJoin} variant="primary">Join</Button>
+          <div className="modal-foot">
+            <Button variant="secondary" onClick={handleClose}>
+              Close
+            </Button>
+            <Button onClick={handleJoin} variant="primary">Join</Button>
+          </div>
         </Modal.Footer>
       </Modal>
     </>

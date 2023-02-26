@@ -65,10 +65,10 @@ export function CreateLobbyModal() {
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleCreateLobby} variant="primary">Create</Button>
+          <div className="modal-foot">
+            <Button variant="secondary" onClick={handleClose}> Cancel</Button>
+            <Button onClick={handleCreateLobby} variant="primary">Create</Button>
+          </div>
         </Modal.Footer>
       </Modal>
     </>
