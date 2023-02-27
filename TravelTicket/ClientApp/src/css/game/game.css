@@ -19,6 +19,10 @@
     color: black;
 }
 
+.game-container > section > table > tbody > tr.dead {
+    background-color: gray;
+}
+
 h1, h2 {
     color: brown;
 }

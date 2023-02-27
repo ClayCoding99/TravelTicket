@@ -5,19 +5,32 @@ import {FaUpload, FaClock, FaHeart} from "react-icons/fa";
 
 import "../../css/game/game.css";
 
+const startCountDownTimer = 5;
+
+let currentTimer = startCountDownTimer;
+let currentTurnId = 1;
+
 export function Game() {
 
     // store your id on the client side to determine if it's your turn
     // hard code for now
-    const yourId = 5;
+    const yourId = 2;
 
     // test with dummy data for now
     // make the max lobby size of 8 for now
 
     const [players, setPlayers] = useState([]);
     const [playerTakingTurn, setPlayerTakingTurn] = useState(null);
-    const [turnId, setTurnId] = useState(5);
-    const [timer, setTimer] = useState(15);
+    const [timer, setTimer] = useState(startCountDownTimer);
+    const [turnId, setTurnId] = useState(1);
+
+    const [guess, setGuess] = useState("");
+
+    const changeTurnId = () => {
+        setTurnId(prevTurnId => prevTurnId + 1 > players.length ? 1 : prevTurnId + 1);
+    }
+
+    const guessInput = useRef(null);
 
     function initPlayers() {
         let updatedPlayers = [
@@ -31,6 +44,7 @@ export function Game() {
             {name: "Kid Named Finger", id: 8},
         ];
         updatedPlayers.forEach(player => {
+            player.lives = 3;
             if (player.id === turnId) {
                 player.turn = true;
                 setPlayerTakingTurn(player);
@@ -38,44 +52,59 @@ export function Game() {
             else {
                 player.turn = false;
             }
-            player.lives = 3;
         });
         return updatedPlayers;
     }
 
-    function changePlayerTurn() {
-        let updatedPlayers = [];
-        players.forEach(player => {
-            updatedPlayers.push([...player]);
+    function changePlayerTurn(outOfTime) {
+        const playerGuess = guessInput.current.value;
+        guessInput.current.value = "";
+        console.log(playerGuess);
+
+        // update turn id
+        console.log(currentTurnId);
+        const turnId = currentTurnId;
+        currentTurnId = currentTurnId >= 8 ? 1 : currentTurnId + 1;
+
+        // update player data based on new turn
+        setPlayers(prevPlayers => {
+            const updatedPlayers = prevPlayers.map(player => {
+                console.log(currentTurnId);
+                if (player.id == turnId) {
+                    if (outOfTime) {
+                        player.lives -= 1;
+                    }
+                    player.turn = false;
+                } else if (player.id == currentTurnId) {
+                    player.turn = true;
+                    setPlayerTakingTurn(player);
+                }
+                return player;
+            });
+            console.log(updatedPlayers);
+            return updatedPlayers;
         });
-        updatedPlayers.forEach(player => {
-            if (player.id === turnId) {
-                player.turn = true;
-                setPlayerTakingTurn(player);
-            }
-            else {
-                player.turn = false;
-            }
-        });
-        setPlayers(updatedPlayers);
+
+        setTurnId(currentTurnId);
+        setTimer(startCountDownTimer);
     }
 
     // initialize players
     useEffect(() => {
+        console.log("in useEffect");
         const updatedPlayers = initPlayers();
         setPlayers(updatedPlayers);
             
         // run the game clock
-        let currentTime = timer;
         const clockInterval = setInterval(() => {
-            setTimer(--currentTime);
-            if (currentTime <= 0) {
-                setTimer(15);
-                currentTime = timer;
-                setTurnId(turnId + 1);
-                changePlayerTurn();
+            setTimer(prevTimer => prevTimer - 1);
+            --currentTimer;
+            if (currentTimer <= 0) {
+                changePlayerTurn(true);
+                currentTimer = startCountDownTimer;
             }
-        }, 1000); 
+        }, 1000);
+        return () => clearInterval(clockInterval); 
     }, []);
 
     // sort by id to determine who goes first
@@ -99,7 +128,7 @@ export function Game() {
                                 lives.push(<FaHeart className="heart" key={i} />);
                             }
                             return (
-                                <tr className={player.turn ? "player-turn" : null} key={player.id}>
+                                <tr className={player.turn ? "player-turn" : null || player.lives === 0 ? "dead" : null} key={player.id}>
                                     <td>{player.id}</td>
                                     <td>{player.name}</td>
                                     <td>
@@ -113,13 +142,16 @@ export function Game() {
             </section>
             <section className="game-screen">
                 <h1>{turnId === yourId ? "Your turn" : playerTakingTurn?.name + "'s turn"}</h1>
-                <h1><FaClock /> {timer}</h1>
+                <h1><FaClock/>{timer}</h1>
                 <h2>Previous Guess: <span>Vancouver</span></h2>
                 <h2>Incorrect Guess!</h2>
             </section>
             <section className="guess">
-                <input disabled={turnId !== yourId} className={turnId !== yourId ? "not-your-turn" : null} placeholder="enter your guess!"></input>
-                <FaUpload id="send-icon" />
+                <input ref={guessInput} onChange={(e) => setGuess(e.target.value)} disabled={turnId !== yourId} className={turnId !== yourId ? "not-your-turn" : null} placeholder="enter your guess!"></input>
+                <FaUpload id="send-icon" onClick={() => {
+                    changePlayerTurn(false);
+                    currentTimer = startCountDownTimer;
+                }} />
             </section>
         </div>
     )
