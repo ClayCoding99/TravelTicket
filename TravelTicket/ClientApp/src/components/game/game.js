@@ -5,10 +5,13 @@ import {FaUpload, FaClock, FaHeart} from "react-icons/fa";
 
 import "../../css/game/game.css";
 
-const startCountDownTimer = 5;
+import EndGameModal from "./endGameModal";
+
+const startCountDownTimer = 2;
 
 let currentTimer = startCountDownTimer;
 let currentTurnId = 1;
+let clockInterval = null;
 
 export function Game() {
 
@@ -23,6 +26,8 @@ export function Game() {
     const [playerTakingTurn, setPlayerTakingTurn] = useState(null);
     const [timer, setTimer] = useState(startCountDownTimer);
     const [turnId, setTurnId] = useState(1);
+
+    const [modalDetails, setModalDetails] = useState({show: false, title: "", body: ""});
 
     const [guess, setGuess] = useState("");
 
@@ -44,7 +49,7 @@ export function Game() {
             {name: "Kid Named Finger", id: 8},
         ];
         updatedPlayers.forEach(player => {
-            player.lives = 3;
+            player.lives = 1;
             if (player.id === turnId) {
                 player.turn = true;
                 setPlayerTakingTurn(player);
@@ -61,19 +66,34 @@ export function Game() {
         guessInput.current.value = "";
         console.log(playerGuess);
 
-        // update turn id
-        console.log(currentTurnId);
-        const turnId = currentTurnId;
-        currentTurnId = currentTurnId >= 8 ? 1 : currentTurnId + 1;
-
         // update player data based on new turn
         setPlayers(prevPlayers => {
-            const updatedPlayers = prevPlayers.map(player => {
-                console.log(currentTurnId);
-                if (player.id == turnId) {
+            // update the player lives
+            let updatedPlayers = prevPlayers.map(player => {
+                if (player.id == currentTurnId) {
                     if (outOfTime) {
-                        player.lives -= 1;
+                        if (player.lives > 0) {
+                            player.lives -= 1;
+                        }
                     }
+                }
+                return player;
+            });
+
+            // update turn id (skip over those who are dead)
+            const turnId = currentTurnId;
+            currentTurnId = currentTurnId >= 8 ? 1 : currentTurnId + 1;
+            for (let i = currentTurnId - 1; i < updatedPlayers.length; i++) {
+                if ((updatedPlayers[i % updatedPlayers.length].lives) > 0) {
+                    console.log(updatedPlayers[i % updatedPlayers.length]);
+                    currentTurnId = updatedPlayers[i].id;
+                    break;
+                }
+            }
+
+            // update the turn data
+            updatedPlayers = prevPlayers.map(player => {
+                if (player.id == turnId) {
                     player.turn = false;
                 } else if (player.id == currentTurnId) {
                     player.turn = true;
@@ -81,13 +101,29 @@ export function Game() {
                 }
                 return player;
             });
-            console.log(updatedPlayers);
+
             return updatedPlayers;
         });
 
         setTurnId(currentTurnId);
         setTimer(startCountDownTimer);
     }
+
+    // check conditions when players update
+    useEffect(() => {
+        console.log("in useEffect");
+        const playersAlive = players.filter(player => player.lives > 0);
+        if (playersAlive.length === 1) {
+            clearInterval(clockInterval);
+            // display game over screen
+            //alert(playersAlive[0].name + " wins!");
+            setModalDetails({
+                title: "Game Over",
+                body: `${playersAlive[0].name} wins!`,
+                show: true
+            });
+        }
+    }, [players]);
 
     // initialize players
     useEffect(() => {
@@ -96,7 +132,7 @@ export function Game() {
         setPlayers(updatedPlayers);
             
         // run the game clock
-        const clockInterval = setInterval(() => {
+        clockInterval = setInterval(() => {
             setTimer(prevTimer => prevTimer - 1);
             --currentTimer;
             if (currentTimer <= 0) {
@@ -111,7 +147,9 @@ export function Game() {
     players.sort((a, b) => a.id - b.id);
 
     return (
-        <div className="game-container">
+        <>
+            <EndGameModal details={modalDetails}/>
+            <div className="game-container">
             <section className="player-queue">
                 <table>
                     <thead>
@@ -148,11 +186,15 @@ export function Game() {
             </section>
             <section className="guess">
                 <input ref={guessInput} onChange={(e) => setGuess(e.target.value)} disabled={turnId !== yourId} className={turnId !== yourId ? "not-your-turn" : null} placeholder="enter your guess!"></input>
-                <FaUpload id="send-icon" onClick={() => {
+                <FaUpload id="send-icon" className={turnId !== yourId ? "not-your-turn" : null} onClick={() => {
+                    if (turnId != yourId) {
+                        return;
+                    }
                     changePlayerTurn(false);
                     currentTimer = startCountDownTimer;
                 }} />
             </section>
         </div>
+        </>
     )
 }
