@@ -10,17 +10,17 @@ export function FindLobby() {
   const [lobbies, setLobbies] = useState(dummyLobbies);
 
   // obtain the lobby details from the server
-  // useEffect(() => {
-  //   fetch ('/api/lobby', {
-  //       method: 'GET',
-  //       headers: {
-  //           'Content-Type': 'application/json'
-  //       }
-  //   }).then(response => response.json()).then(data => {
-  //       console.log(data);
-  //       setLobbies(data);
-  //   });
-  // }, []);
+  useEffect(() => {
+    fetch ('/api/lobby', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }).then(response => response.json()).then(data => {
+        console.log(data);
+        setLobbies(data);
+    });
+  }, []);
 
   return (
     <div className="find-lobby-list">

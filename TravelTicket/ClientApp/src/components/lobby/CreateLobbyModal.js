@@ -20,25 +20,16 @@ export function CreateLobbyModal() {
       return;
     }
 
-    const lobby = {
-      Name: lobbyName,
-      Password: lobbyPassword
-    };
-
-    console.log(lobby);
-
     // post to server and have the server return the lobby id
-    const response = fetch(`/api/lobby?name=${lobbyName}&password=${lobbyPassword}`, {
+    fetch(`/api/lobby/create?name=${lobbyName}&password=${lobbyPassword}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
     }).then(response => response.json()).then(data => {
-      // store the lobby id in local storage, redirect to the lobby page
-      console.log(data.id);
-      localStorage.setItem('lobbyId', data.id);
-
+      // redirect the creator to the lobby with the corresponding id
       handleClose();
+      window.location.href = `/lobby/${data.id}`;
     });
   }
 

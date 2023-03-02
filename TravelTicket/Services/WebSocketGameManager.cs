@@ -2,15 +2,25 @@
 using WebSocketSharp.Server;
 using WebSocketSharp;
 using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.AspNetCore.Cors;
 
 namespace TravelTicket.Services
 {
+    [EnableCors("MyCors")]
     public class GameBehaviour : WebSocketBehavior
     {
+
+        public GameBehaviour() {
+            this.IgnoreExtensions = true;
+        }
+
         protected override void OnOpen()
         {
             // Send the socket information back to every client in the meeting room
             Console.WriteLine("Wss has opened!");
+            Console.WriteLine(this.Context.RequestUri);
         }
 
         protected override void OnMessage(MessageEventArgs e)
@@ -53,6 +63,7 @@ namespace TravelTicket.Services
         private WebSocketGameManager()
         {
             wss = new WebSocketServer(webSocketServerPath);
+            wss.AllowForwardedRequest = true;
             wss.Start();
             Console.WriteLine("Server started on " + webSocketServerPath + "!");
         }

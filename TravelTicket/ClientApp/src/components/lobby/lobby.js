@@ -16,30 +16,36 @@ export function Lobby() {
     const startButton = useRef(null);
     const countDownHeader = useRef(null);
 
-    const wssRoute = window.location.pathname.split('/').pop();
-    const wssPath = `ws://localhost:7890/${wssRoute}`;
-    console.log(wssRoute);
-
-    // // Make a connection to the websocket provided by the server
-    // const socket = io(wssPath);
-
-    // //When the connection is made, log it
-    // socket.on('connect', () => {
-    //     console.log('Connected to websocket');
-    // });
-
     // test with dummy data for now
     // make the max lobby size of 8 for now
     const [players, setPlayers] = useState([
-        {name: "Walter", id: 1},
-        {name: "Alice", id: 2},
-        {name: "Joe", id: 3},
-        {name: "Pog", id: 4},
-        {name: "Clayton", id: 5},
-        {name: "Jane", id: 6},
-        {name: "Bob", id: 7},
-        {name: "Kid Named Finger", id: 8},
+        // {name: "Walter", id: 1},
+        // {name: "Alice", id: 2},
+        // {name: "Joe", id: 3},
+        // {name: "Pog", id: 4},
+        // {name: "Clayton", id: 5},
+        // {name: "Jane", id: 6},
+        // {name: "Bob", id: 7},
+        // {name: "Kid Named Finger", id: 8},
     ]);
+
+    const wssRoute = window.location.pathname.split('/').pop();
+
+    useEffect(() => {
+
+        const wssPath = `ws://localhost:7890/${wssRoute}`;
+        console.log(wssRoute);
+
+        // Make a connection to the websocket provided by the server
+        const socket = io(wssPath);
+
+
+        // When the connection is made, log it
+        socket.on('connect', () => {
+            console.log('Connected to websocket');
+        });
+
+    }, []);
 
     function goToMenu() {
         console.log("go to menu");

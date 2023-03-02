@@ -21,8 +21,8 @@ namespace TravelTicket.Controllers
 
         // api/lobby (creates a new lobby)
         [EnableCors("MyCors")]
-        [HttpPost]
-        public IActionResult Lobby(string name, string password)
+        [HttpPost("/api/lobby/create")]
+        public IActionResult Create(string name, string password)
         {
             try
             {
