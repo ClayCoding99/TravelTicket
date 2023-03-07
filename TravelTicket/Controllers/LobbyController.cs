@@ -1,26 +1,29 @@
 ﻿using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System;
+using TravelTicket.Hubs;
 using TravelTicket.Services;
 
 namespace TravelTicket.Controllers
 {
 
+    [EnableCors("MyCors")]
     [ApiController]
     [Route("api/[controller]")]
     public class LobbyController : ControllerBase
     {
+        private readonly IHubContext<MessageHub> _hubContext;
+
         // holds all the current lobby's 
         private LobbyManager lobbyManager;
-        private WebSocketGameManager gameManager;
 
-        public LobbyController() {
+        public LobbyController(IHubContext<MessageHub> hubContext) {
+            _hubContext = hubContext;
             lobbyManager = LobbyManager.GetInstance();
-            gameManager = WebSocketGameManager.GetInstance();
         }    
 
         // api/lobby (creates a new lobby)
-        [EnableCors("MyCors")]
         [HttpPost("/api/lobby/create")]
         public IActionResult Create(string name, string password)
         {
@@ -33,15 +36,13 @@ namespace TravelTicket.Controllers
                 LobbyDetails lobbyDetails = new LobbyDetails();
                 lobbyDetails.Name = name;
                 lobbyDetails.Password = password;
-                lobbyDetails.ID = Guid.NewGuid().ToString().Substring(0, 5);
+                lobbyDetails.ID = Guid.NewGuid().ToString();
                 lobbyDetails.Created = DateTime.Now;
 
                 // create the lobby details so that other people can see it and possibly join
                 lobbyManager.AddLobby(lobbyDetails);
 
-                // create the web socket server lobby
-                gameManager.AddLobby("/" + lobbyDetails.ID);
-
+                // send the lobby details back to the client
                 return new JsonResult(lobbyDetails);
             } catch (Exception ex)
             {
@@ -50,13 +51,36 @@ namespace TravelTicket.Controllers
         }
 
         // api/lobby (obtain the list of lobbies sorted by most recent) 
-        [EnableCors("MyCors")]
         [HttpGet]
         public IActionResult Lobby()
         {
-            var lobbys = lobbyManager.GetLobbys();
-            return new JsonResult(lobbys.AsParallel().OrderByDescending(a => a.Created));
-        } 
+            try
+            {
+                var lobbys = lobbyManager.GetLobbys();
+                return new JsonResult(lobbys.AsParallel().OrderByDescending(a => a.Created));
+            } catch (Exception ex)
+            {
+                return new JsonResult($"{ex.Message}");
+            }
+        }
+
+
+        [HttpGet("{id}")]
+        public IActionResult Lobby(string id)
+        {
+            try
+            {
+                if (id == null)
+                {
+                    return new JsonResult("{errMsg: \"Lobby Id cannot be null!\"}");
+                }
+                var lobby = lobbyManager.GetLobbys().First(a => a.ID == id);
+                return new JsonResult(lobby);
+            } catch (Exception ex)
+            {
+                return new JsonResult(ex.Message);
+            }
+        }
 
     }
 }
