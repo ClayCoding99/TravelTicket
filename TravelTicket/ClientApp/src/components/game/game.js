@@ -4,6 +4,7 @@ import {useState, useEffect, useRef} from 'react';
 import {FaUpload, FaClock, FaHeart} from "react-icons/fa";
 
 import "../../css/game/game.css";
+import { HubConnectionBuilder } from '@microsoft/signalr';
 
 import EndGameModal from "./endGameModal";
 
@@ -14,100 +15,133 @@ let currentTurnId = 1;
 let clockInterval = null;
 
 export function Game() {
-
-    // store your id on the client side to determine if it's your turn
-    // hard code for now
-    const yourId = 2;
-
-    // test with dummy data for now
-    // make the max lobby size of 8 for now
+    // your display name (Keep in mind that the display name is your id as well)
+    const displayName = localStorage.getItem("displayName");
 
     const [players, setPlayers] = useState([]);
     const [playerTakingTurn, setPlayerTakingTurn] = useState(null);
     const [timer, setTimer] = useState(startCountDownTimer);
-    const [turnId, setTurnId] = useState(1);
-
     const [modalDetails, setModalDetails] = useState({show: false, title: "", body: ""});
-
     const [guess, setGuess] = useState("");
-
-    const changeTurnId = () => {
-        setTurnId(prevTurnId => prevTurnId + 1 > players.length ? 1 : prevTurnId + 1);
-    }
-
+    const [connection, setConnection] = useState(null);
     const guessInput = useRef(null);
 
-    function initPlayers() {
-        let updatedPlayers = [
-            {name: "Walter", id: 1},
-            {name: "Alice", id: 2},
-            {name: "Joe", id: 4},
-            {name: "Pog", id: 3},
-            {name: "Clayton", id: 5},
-            {name: "Jane", id: 6},
-            {name: "Bob", id: 7},
-            {name: "Kid Named Finger", id: 8},
-        ];
-        updatedPlayers.forEach(player => {
-            player.lives = 1;
-            if (player.id === turnId) {
-                player.turn = true;
-                setPlayerTakingTurn(player);
-            }
-            else {
-                player.turn = false;
-            }
-        });
-        return updatedPlayers;
-    }
+    // WEBSOCKETS
+    useEffect(() => {
+        if (connection == null) {
+            console.log("connecting to hub");
+            // connect to the hub
+            let newConnection = new HubConnectionBuilder().withUrl("https://localhost:7150/messages").withAutomaticReconnect().build();
+            setConnection(newConnection);
+        }
+    }, []);
 
-    function changePlayerTurn(outOfTime) {
-        const playerGuess = guessInput.current.value;
-        guessInput.current.value = "";
-        console.log(playerGuess);
+    const lobbyId = window.location.pathname.split('/').pop();
 
-        // update player data based on new turn
-        setPlayers(prevPlayers => {
-            // update the player lives
-            let updatedPlayers = prevPlayers.map(player => {
-                if (player.id == currentTurnId) {
-                    if (outOfTime) {
-                        if (player.lives > 0) {
-                            player.lives -= 1;
-                        }
+    // WEBSOCKETS
+    useEffect(() => {
+        if (connection) {
+            connection.start().then((result) => {
+                console.log("Connected to game");
+                
+                connection.on("ReceivGameeData", (message) => {
+                    console.log("in receive game message");
+                    console.log(message);
+
+                    // update player data
+                    let newPlayerData = [];
+                    for (let i = 0; i < message.players.length; i++) {
+                        newPlayerData.push({name: message.players[i], id: i});
                     }
-                }
-                return player;
+                    console.log(newPlayerData);
+                    setPlayers(newPlayerData);
+                    setPlayerTakingTurn(message.playerTakingTurn);
+                });
+
+                // join the specific lobby group
+                connection.invoke("AddPlayerToLobby", lobbyId).then((message) => {
+                    console.log("Invoked websocket lobby");
+                    console.log(message);
+                }).catch((err) => {
+                    console.log("Error joining lobby: " + err);
+                });
+
+                // receive timer data
+                connection.on("ReceiveGameTimer", (message) => {
+                    // if (message.countDown <= 0) {
+                    //     window.location.href = `./game/${lobbyId}`;
+                    // }
+                    // const timerData = {
+                    //     timerStarted: message.timerStarted,
+                    //     countDown: message.countDown
+                    // }
+                    // setCountDown(timerData);
+
+                    // initialize game data
+                }).catch((err) => {
+                    console.log("Error receiving timer: " + err);
+                });
+    
+                // initial call to get the game data
+                connection.invoke("InitializeGameData", lobbyId).then((message) => {
+                    console.log("Obtained game data");
+                });
+
+            }).catch((err) => {
+                console.log("Error connecting to game: " + err);
             });
+        }
+    }, [connection]);
 
-            // update turn id (skip over those who are dead)
-            const turnId = currentTurnId;
-            currentTurnId = currentTurnId >= 8 ? 1 : currentTurnId + 1;
-            for (let i = currentTurnId - 1; i < updatedPlayers.length; i++) {
-                if ((updatedPlayers[i % updatedPlayers.length].lives) > 0) {
-                    console.log(updatedPlayers[i % updatedPlayers.length]);
-                    currentTurnId = updatedPlayers[i].id;
-                    break;
-                }
-            }
 
-            // update the turn data
-            updatedPlayers = prevPlayers.map(player => {
-                if (player.id == turnId) {
-                    player.turn = false;
-                } else if (player.id == currentTurnId) {
-                    player.turn = true;
-                    setPlayerTakingTurn(player);
-                }
-                return player;
-            });
+    // TODO: move to server side
+    // function changePlayerTurn(outOfTime) {
+    //     const playerGuess = guessInput.current.value;
+    //     guessInput.current.value = "";
+    //     console.log(playerGuess);
 
-            return updatedPlayers;
-        });
+    //     // update player data based on new turn
+    //     setPlayers(prevPlayers => {
+    //         // update the player lives
+    //         let updatedPlayers = prevPlayers.map(player => {
+    //             if (player.id == currentTurnId) {
+    //                 if (outOfTime) {
+    //                     if (player.lives > 0) {
+    //                         player.lives -= 1;
+    //                     }
+    //                 }
+    //             }
+    //             return player;
+    //         });
 
-        setTurnId(currentTurnId);
-        setTimer(startCountDownTimer);
-    }
+    //         // update turn id (skip over those who are dead)
+    //         const turnId = currentTurnId;
+    //         currentTurnId = currentTurnId >= 8 ? 1 : currentTurnId + 1;
+    //         for (let i = currentTurnId - 1; i < updatedPlayers.length; i++) {
+    //             if ((updatedPlayers[i % updatedPlayers.length].lives) > 0) {
+    //                 console.log(updatedPlayers[i % updatedPlayers.length]);
+    //                 currentTurnId = updatedPlayers[i].id;
+    //                 break;
+    //             }
+    //         }
+
+    //         // update the turn data
+    //         updatedPlayers = prevPlayers.map(player => {
+    //             if (player.id == turnId) {
+    //                 player.turn = false;
+    //             } else if (player.id == currentTurnId) {
+    //                 player.turn = true;
+    //                 setPlayerTakingTurn(player);
+    //             }
+    //             return player;
+    //         });
+
+    //         return updatedPlayers;
+    //     });
+
+    //     setTurnId(currentTurnId);
+    //     setTimer(startCountDownTimer);
+    // }
 
     // check conditions when players update
     useEffect(() => {
@@ -128,19 +162,18 @@ export function Game() {
     // initialize players
     useEffect(() => {
         console.log("in useEffect");
-        const updatedPlayers = initPlayers();
-        setPlayers(updatedPlayers);
+
             
         // run the game clock
-        clockInterval = setInterval(() => {
-            setTimer(prevTimer => prevTimer - 1);
-            --currentTimer;
-            if (currentTimer <= 0) {
-                changePlayerTurn(true);
-                currentTimer = startCountDownTimer;
-            }
-        }, 1000);
-        return () => clearInterval(clockInterval); 
+        // clockInterval = setInterval(() => {
+        //     setTimer(prevTimer => prevTimer - 1);
+        //     --currentTimer;
+        //     if (currentTimer <= 0) {
+        //         changePlayerTurn(true);
+        //         currentTimer = startCountDownTimer;
+        //     }
+        // }, 1000);
+        // return () => clearInterval(clockInterval); 
     }, []);
 
     // sort by id to determine who goes first
@@ -179,18 +212,18 @@ export function Game() {
                 </table>
             </section>
             <section className="game-screen">
-                <h1>{turnId === yourId ? "Your turn" : playerTakingTurn?.name + "'s turn"}</h1>
+                <h1>{displayName == playerTakingTurn?.name ? "Your turn" : playerTakingTurn?.name + "'s turn"}</h1>
                 <h1><FaClock/>{timer}</h1>
                 <h2>Previous Guess: <span>Vancouver</span></h2>
                 <h2>Incorrect Guess!</h2>
             </section>
             <section className="guess">
-                <input ref={guessInput} onChange={(e) => setGuess(e.target.value)} disabled={turnId !== yourId} className={turnId !== yourId ? "not-your-turn" : null} placeholder="enter your guess!"></input>
-                <FaUpload id="send-icon" className={turnId !== yourId ? "not-your-turn" : null} onClick={() => {
-                    if (turnId != yourId) {
+                <input ref={guessInput} onChange={(e) => setGuess(e.target.value)} disabled={displayName !== playerTakingTurn?.name} className={displayName !== playerTakingTurn?.name ? "not-your-turn" : null} placeholder="enter your guess!"></input>
+                <FaUpload id="send-icon" className={displayName !== playerTakingTurn?.name ? "not-your-turn" : null} onClick={() => {
+                    if (displayName != playerTakingTurn?.name) {
                         return;
                     }
-                    changePlayerTurn(false);
+                    //changePlayerTurn(false);
                     currentTimer = startCountDownTimer;
                 }} />
             </section>

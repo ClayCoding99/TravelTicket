@@ -12,23 +12,34 @@ namespace TravelTicket.Hubs
 
         public class Player
         {
+            public Player() {
+                DisplayName = "";
+                Lives = 3;
+                Turn = false;
+                Guess = "";
+            } 
             public string DisplayName { get; set; }
             public string? Guess { get; set; }
+            public int Lives { get; set; }
+            bool Turn { get; set; }
         }
 
         public class GameDetails
         {
-            public GameDetails(string groupId, Action callback)
+            public GameDetails()
             {
                 Players = new List<Player>();
                 TimerStarted = false;
                 Timer = 10;
                 State = "lobby";
+                playerTakingTurn = null;
             }
             public List<Player> Players { get; set; }
             public string State { get; set; }
             public int Timer { get; set; }
             public bool TimerStarted { get; set; }
+            public Player? playerTakingTurn { get; set; }
+    
         }
 
         public static Dictionary<string, GameDetails> games = new Dictionary<string, GameDetails>();
@@ -36,7 +47,7 @@ namespace TravelTicket.Hubs
         // set up the lobby information
         public Task JoinLobby(string groupId)
         {
-            games.TryAdd(groupId, new GameDetails(groupId, () => Clients.Group(groupId).SendAsync("ReceiveData", games[groupId])));
+            games.TryAdd(groupId, new GameDetails());
             games[groupId].Timer = 10;
             games[groupId].TimerStarted = false;
             return Groups.AddToGroupAsync(Context.ConnectionId, groupId);
@@ -44,13 +55,29 @@ namespace TravelTicket.Hubs
 
         public Task AddPlayerToLobby(string groupId, string username)
         {
+            // TODO: make an AddPlayerToGame
+
             // add the player to the lobby on the server side
             Player player = new Player();
             player.DisplayName = username;
             games[groupId].Players.Add(player);
 
+            if (games[groupId].State == "lobby")
+            {
+                games[groupId].State = "game";
+            }
+
+            Console.WriteLine(games[groupId]);
+
             // send back the lobby id to the player for the client to hold onto
-            return Clients.Group(groupId).SendAsync("ReceiveData", games[groupId]);
+            if (games[groupId].State == "game")
+            {
+                return Clients.Group(groupId).SendAsync("ReceivGameeData", games[groupId]);
+
+            } else
+            {
+                return Clients.Group(groupId).SendAsync("ReceiveData", games[groupId]);
+            }
         }
 
         public void UpdateTimer(string groupId, LobbyController.TimerDetails timerDetails)
@@ -70,6 +97,12 @@ namespace TravelTicket.Hubs
             int removeIndex = games[groupId].Players.FindIndex(p => p.DisplayName == username);
             games[groupId].Players.RemoveAt(removeIndex);
             return Clients.Group(groupId).SendAsync("ReceiveData", games[groupId].Players);
+        }
+
+        public Task InitializeGameData(string groupId)
+        {
+            games[groupId].playerTakingTurn = games[groupId].Players[0];
+            return Clients.Group(groupId).SendAsync("ReceiveGameMessage", games[groupId]);
         }
 
         public override async Task OnConnectedAsync()

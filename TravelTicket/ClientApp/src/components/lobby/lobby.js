@@ -25,7 +25,6 @@ export function Lobby() {
             let newConnection = new HubConnectionBuilder().withUrl("https://localhost:7150/messages").withAutomaticReconnect().build();
             setConnection(newConnection);
         }
-
         fetch (`/api/lobby/${lobbyId}`, {
             method: 'GET',
             headers: {
@@ -35,7 +34,6 @@ export function Lobby() {
             console.log(data);
             setLobbyName(data.name);
         });
-
     }, []);
 
     useEffect(() => {
