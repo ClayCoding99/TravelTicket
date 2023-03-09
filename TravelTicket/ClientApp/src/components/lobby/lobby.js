@@ -6,7 +6,7 @@ import "../../css/lobby/lobby.css";
 
 export function Lobby() {
 
-    const [countDown, setCountDown] = useState(false);
+    const [countDown, setCountDown] = useState(null);
 
     //const countDown = useRef(false);
     const startButton = useRef(null);
@@ -67,27 +67,45 @@ export function Lobby() {
                     }
                     console.log(newPlayerData);
                     setPlayers(newPlayerData);
-                    setCountDown({"timer": message.timer, "timerStarted": message.timerStarted});
 
-                    if (message.state == "GameStarted") {
+                    if (message.state == "game") {
                         window.location.href = `./game/${lobbyId}`;
                     }
                 });
-                
 
+                // receive timer data
+                connection.on("ReceiveTimer", (message) => {
+
+                    if (message.countDown <= 0) {
+                        window.location.href = `./game/${lobbyId}`;
+                    }
+                    const timerData = {
+                        timerStarted: message.timerStarted,
+                        countDown: message.countDown
+                    }
+                    setCountDown(timerData);
+
+                    console.log("Count down is changed in use effect");
+                    console.log(countDown);
+                    if (timerData.timerStarted) {
+                        countDownHeader.current.className = "";
+                        startButton.current.className = "cancel-game";
+                        startButton.current.innerText = "Cancel";
+                    } else {
+                        countDownHeader.current.className = "hidden";
+                        startButton.current.className = "start-game";
+                        startButton.current.innerText = "Start";
+                    }
+                }).catch((err) => {
+                    console.log("Error receiving timer: " + err);
+                });
+    
             }).catch((err) => {
                 console.log("Error connecting to lobby: " + err);
             });
         }
     }, [connection]);
 
-    function sendMessage() {
-        // send a test message to the lobby participants 
-        const message = "Hello to " + lobbyId + "!";
-        connection.invoke("SendMessageToLobby", lobbyId, message).catch((err) => {
-            console.log("Error sending message to lobby: " + err);
-        });
-    }
 
     function goToMenu() {
         // remove player from the lobby
@@ -100,31 +118,20 @@ export function Lobby() {
     }
 
     function startGame() {
-        connection.invoke("ToggleCountDown", lobbyId).catch((err) => {
-            console.log("Error toggling the countdown: " + err);
+        // handle countdown
+        fetch("api/lobby/" + lobbyId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
         });
-
-        // toggle timer and start button change
-        if (!countDown.timerStarted) {
-            console.log("start countdown...");
-            countDownHeader.current.className = "";
-            startButton.current.className = "cancel-game";
-            startButton.current.innerText = "Cancel";
-            countDown.current = true;
-        } else {
-            console.log("stop countdown...");
-            countDown.current = false;
-            countDownHeader.current.className = "hidden";
-            startButton.current.className = "start-game";
-            startButton.current.innerText = "Start";
-        }
-    }
+    }   
 
     // make a sample table for now
     return (
     <div className="lobby-container">
         <h1>{lobbyName == null ? "Lobby Name Here" : lobbyName}</h1>
-        <h2 ref={countDownHeader} className="hidden">Game starts in {countDown.timer}!</h2>
+        <h2 ref={countDownHeader} className="hidden">{countDown ? `Game starts in ${countDown.countDown}!` : null}</h2>
         <table>
             <thead>
                 <tr>
@@ -147,7 +154,6 @@ export function Lobby() {
             <button onClick={goToMenu} className="cancel">Leave</button>
             <button ref={startButton} onClick={startGame} className="start">Start Game</button>
         </div>
-        <button onClick={sendMessage}>Test</button>
     </div>
     );
 }

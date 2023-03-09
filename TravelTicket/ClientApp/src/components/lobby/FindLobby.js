@@ -5,9 +5,7 @@ import "../../css/lobby/findLobby.css";
 
 export function FindLobby() {
 
-  const dummyLobbies = [{name: "Walter", description: "ijhgrgioerhgoiehgirehgoerhiorehiorehgioerhgiorehgoierhgioerhgioerhgoierhgiorehoehiohgoierhgoirehgoiheriiiiiiiiiiiighieorhgerhgoerhogiehirgwewwewwewwew", password: "1"}, {name: "kid", description: "named finger", password: "1"}, {name: "Joe", description: "Mother", password: "1"}, {name: "kid", description: "named finger", password: "1"}, {name: "kid", description: "named finger", password: "1"}, {name: "kid", description: "named finger", password: "1"}];
-
-  const [lobbies, setLobbies] = useState(dummyLobbies);
+  const [lobbies, setLobbies] = useState([]);
 
   // obtain the lobby details from the server
   useEffect(() => {

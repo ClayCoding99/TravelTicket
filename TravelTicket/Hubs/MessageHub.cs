@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.SignalR;
-using System.Text.RegularExpressions;
 using System.Timers;
+using TravelTicket.Controllers;
 using Timer = System.Timers.Timer;
 
 namespace TravelTicket.Hubs
@@ -9,9 +9,6 @@ namespace TravelTicket.Hubs
     [EnableCors("MyCors")]
     public class MessageHub : Hub
     {
-        public enum GameStates {
-            Lobby, InGame 
-        }
 
         public class Player
         {
@@ -21,47 +18,17 @@ namespace TravelTicket.Hubs
 
         public class GameDetails
         {
-            public System.Timers.Timer countDownTimer = new Timer(1000);
-            private string groupId;
-            private Action callback;
             public GameDetails(string groupId, Action callback)
             {
                 Players = new List<Player>();
                 TimerStarted = false;
                 Timer = 10;
-                State = GameStates.Lobby;
-                this.groupId = groupId;
-                this.callback = callback;
+                State = "lobby";
             }
-
             public List<Player> Players { get; set; }
-            public GameStates State { get; set; }
+            public string State { get; set; }
             public int Timer { get; set; }
             public bool TimerStarted { get; set; }
-
-            public void TimerCountDown(object sender, ElapsedEventArgs e)
-            {
-                try
-                {
-                    Timer--;
-                    if (Timer <= 0)
-                    {
-                        // TODO transfer everyone into the game state
-                        TimerStarted = false;
-                        Timer = 10;
-                        State = GameStates.InGame;
-                        countDownTimer.Elapsed -= TimerCountDown;
-                        callback();
-                        //c.Clients.Group(groupId).SendAsync("ReceiveData", this);
-                    }
-                    Console.WriteLine("Tick...");
-                    callback();
-                } catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-            }
-
         }
 
         public static Dictionary<string, GameDetails> games = new Dictionary<string, GameDetails>();
@@ -86,26 +53,16 @@ namespace TravelTicket.Hubs
             return Clients.Group(groupId).SendAsync("ReceiveData", games[groupId]);
         }
 
-        public Task ToggleCountDown(string groupId)
+        public void UpdateTimer(string groupId, LobbyController.TimerDetails timerDetails)
         {
-            Console.WriteLine("In toggle countdown");
-            // reset the timer and remove the countdown delegate from the timer event 
-            if (games[groupId].TimerStarted)
+            games[groupId].Timer = timerDetails.CountDown;
+            games[groupId].TimerStarted = timerDetails.TimerStarted;
+            if (timerDetails.CountDown <= 0)
             {
-                games[groupId].TimerStarted = false;
-                games[groupId].Timer = 10;
-                games[groupId].countDownTimer.Elapsed -= games[groupId].TimerCountDown;
-
-                return Clients.Group(groupId).SendAsync("ReceiveData", games[groupId]);
+                games[groupId].State = "game";
             }
-            // start the timer and add the countdown delegate to the timer event
-            games[groupId].TimerStarted = true;
-            games[groupId].countDownTimer.Elapsed += games[groupId].TimerCountDown;
-            games[groupId].countDownTimer.Enabled = true;
-            games[groupId].countDownTimer.AutoReset = true;
-            games[groupId].countDownTimer.Start();
-
-            return Clients.Group(groupId).SendAsync("ReceiveData", games[groupId]);
+            Console.WriteLine("Going to send back to client");
+            Clients.Group(groupId).SendAsync("ReceiveData", games[groupId]);
         }
 
         public Task RemovePlayerFromLobby(string groupId, string username)
@@ -127,8 +84,6 @@ namespace TravelTicket.Hubs
             await Clients.All.SendAsync("UserDisconnected", Context.ConnectionId);
             await base.OnDisconnectedAsync(ex);
         }
-
-
 
     }
 }
